@@ -57,6 +57,9 @@ Technical documentation and patch catalog for Firefox on Android.
 8. **Profiler Service Disablement**:
    Enabling `disableProfilerService` disables the GeckoView profiler recording and sampling background service. While saving CPU cycles and memory overhead, upstream Mozilla performance diagnostic captures via `about:profiling` will be unavailable.
 
+9. **Firebase Push & Runtime Component Preservation**:
+   `FirebaseInitProvider` and `ComponentDiscoveryService` are intentionally preserved and kept enabled because Firebase Cloud Messaging (FCM) push delivery strictly depends on them (77 messaging classes referenced; verified free of Google Analytics/Crashlytics, containing only the decoupled `AnalyticsConnector` interface). Telemetry is completely neutralized at the Google DataTransport transport layer, via Glean/Adjust/Crash dispatcher stubs, and through network host redirection. Additionally, `CrashHandlerService` remains registered and enabled in the manifest because `GeckoRuntime.init` requires its declaration during startup initialization.
+
 ---
 
 ## Deep Technical Patch Breakdown
