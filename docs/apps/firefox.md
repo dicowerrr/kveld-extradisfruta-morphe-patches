@@ -28,6 +28,7 @@ Technical documentation and patch catalog for Firefox on Android.
 | **Privacy Controls** | `bytecodePatch` | `false` (Opt-in) | `Privacy Controls Setup` | Provides opt-in privacy toggles: screenshot enablement in private tabs (`allowScreenshots`), network security hardening (`hardenNetworkSecurity`), URL tracking parameter stripping (`cleanShareUrls`), and runtime device identifier neutralization (`neutralizeDeviceData`). |
 | **Privacy Controls Setup** | `resourcePatch` | `false` (Opt-in) | None | Provides optional manifest-level permission stripping across 7 granular privacy axes (camera, microphone, location, notifications, media-storage, package-query, biometrics) and injects network security configuration for user CA trust. |
 | **Firefox Debloat** | `resourcePatch` | `false` (Opt-in) | None | Provides footprint reduction options: prunes built-in WebExtension asset bundles (`pruneExtensionBundles`), disables GeckoView background profiler service (`disableProfilerService`), and stubs onboarding tutorial MP4 video assets with minimal 32-byte headers (`stubOnboardingMedia`). |
+| **UX Declutter** | `bytecodePatch` | `false` (Opt-in) | None | Suppresses introductory onboarding friction: bypasses first-run setup screens (`skipFirstRun`) to launch directly into the browser, and neutralizes recurring onboarding prompts and wallpaper promotions (`suppressContinuousPromos`). |
 
 ---
 
@@ -59,6 +60,9 @@ Technical documentation and patch catalog for Firefox on Android.
 
 9. **Firebase Push & Runtime Component Preservation**:
    `FirebaseInitProvider` and `ComponentDiscoveryService` are intentionally preserved and kept enabled because Firebase Cloud Messaging (FCM) push delivery strictly depends on them (77 messaging classes referenced; verified free of Google Analytics/Crashlytics, containing only the decoupled `AnalyticsConnector` interface). Telemetry is completely neutralized at the Google DataTransport transport layer, via Glean/Adjust/Crash dispatcher stubs, and through network host redirection. Additionally, `CrashHandlerService` remains registered and enabled in the manifest because `GeckoRuntime.init` requires its declaration during startup initialization.
+
+10. **First-Run Setup & Terms Bypass**:
+    The `skipFirstRun` option in UX Declutter forces the onboarded version check to `Int.MAX_VALUE`, bypassing the 3-step introductory flow and opening directly to navigation. Consequently, the user will not see first-run disclosures, default browser prompts, theme selections, or search engine picker dialogs; these remain configurable at any time in Firefox Settings.
 
 ---
 
@@ -137,3 +141,13 @@ Technical documentation and patch catalog for Firefox on Android.
 - **Onboarding Tutorial Media Stubbing (`stubOnboardingMedia`)**:
   - Replaces non-essential first-run onboarding MP4 video assets under `res/raw/` with a minimal 32-byte deterministic MP4 header stub.
   - Neutralizes onboarding video bloat without triggering resource resolution crashes or XML layout inflation failures.
+
+### 5. UX Declutter Layer
+
+- **Typology**: `bytecodePatch` (`UX Declutter`, default `false` opt-in).
+- **First-Run Onboarding Bypass (`skipFirstRun`)**:
+  - Injects bytecode overrides into `FenixOnboarding.getOnboardedVersion` to return `Int.MAX_VALUE` unconditionally.
+  - Bypasses the 3 introductory wizard screens (welcome, sign-in, and default browser prompts), launching immediately into the primary navigation view.
+- **Continuous Promotion Suppression (`suppressContinuousPromos`)**:
+  - Stubs `ContinuousOnboardingFeature.start` and `showDialog` entrypoints with immediate `return-void` instructions.
+  - Neutralizes recurring promotional popups, onboarding nudge dialogs, and sponsored wallpaper promotion overlays.
