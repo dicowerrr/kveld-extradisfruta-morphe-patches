@@ -42,14 +42,16 @@ private val blockedComponents = setOf(
     "com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService",
     "com.google.android.datatransport.runtime.backends.TransportBackendDiscovery",
 
-    // Firefox / Fenix / GeckoView Crash Reporting Services (:crashReportingProcess)
-    "org.mozilla.fenix.crashreporting.CrashHandlerService",
+    // Firefox / Fenix Crash Report Upload Services (uploaders only)
+    // Note: CrashHandlerService (mozilla.components.lib.crash.handler.CrashHandlerService / GeckoView)
+    // is required to be registered as an enabled service by GeckoRuntime.init during startup
+    // (throws IllegalArgumentException: Crash handler must be registered as a service).
+    // Exfiltration suppression is enforced at consumer layer (CrashReporter stubs, Socorro host rewrite,
+    // and disabled uploaders: SendCrashReportService / SendCrashTelemetryService / DataTransport), not in the manifest.
     "org.mozilla.fenix.crashreporting.SendCrashReportService",
     "org.mozilla.fenix.crashreporting.SendCrashTelemetryService",
-    "mozilla.components.lib.crash.service.CrashHandlerService",
     "mozilla.components.lib.crash.service.SendCrashReportService",
     "mozilla.components.lib.crash.service.SendCrashTelemetryService",
-    "org.mozilla.geckoview.CrashHandlerService",
 )
 
 private val optOutMetadata = listOf(
@@ -89,12 +91,11 @@ private val firefoxTelemetryResourcePatch = resourcePatch(
             removedPermissions = root.stripPermissionsWhere { it in blockedPermissions }.size
 
             if (application != null) {
-                // 2. Disable components (exact blocked set + dynamic crash and adjust components)
+                // 2. Disable components (exact blocked set + dynamic crash uploaders and adjust components)
                 disabledComponents = application.disableComponentsWhere(
                     "activity", "provider", "service", "receiver"
                 ) { name ->
                     name in blockedComponents ||
-                        name.endsWith("CrashHandlerService") ||
                         name.endsWith("SendCrashReportService") ||
                         name.endsWith("SendCrashTelemetryService") ||
                         (name.contains("adjust", ignoreCase = true) &&
