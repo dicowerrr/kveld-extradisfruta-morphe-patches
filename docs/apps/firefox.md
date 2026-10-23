@@ -30,6 +30,7 @@ Technical documentation and patch catalog for Firefox on Android.
 | **Firefox Debloat** | `resourcePatch` | `false` (Opt-in) | None | Provides footprint reduction options: prunes built-in WebExtension asset bundles (`pruneExtensionBundles`), disables GeckoView background profiler service (`disableProfilerService`), and stubs onboarding tutorial MP4 video assets with minimal 32-byte headers (`stubOnboardingMedia`). |
 | **UX Declutter** | `bytecodePatch` | `false` (Opt-in) | None | Suppresses introductory onboarding friction: bypasses first-run setup screens (`skipFirstRun`) to launch directly into the browser, and neutralizes recurring onboarding prompts and wallpaper promotions (`suppressContinuousPromos`). |
 | **Firefox Merino Block** | `bytecodePatch` | `false` (Opt-in) | None | Disables sponsored and remote suggestions from Mozilla Merino backend: redirects endpoint `ohttp-merino.mozilla.fastly-edge.com` to `0.0.0.0`, forces `isSponsored` and `showSponsoredSuggestions` to false, and neutralizes Awesomebar sponsored metrics. |
+| **Firefox AI Block** | `bytecodePatch` | `false` (Opt-in) | None | Blocks client-side AI integration and summarization: disables web page summarization (`blockSummarization`), suppresses AI-specific telemetry event dispatchers (`blockAiTelemetry`), and activates local kill-switches (`enforceAiKillSwitch`). Preserves on-device translations. |
 
 ---
 
@@ -67,6 +68,9 @@ Technical documentation and patch catalog for Firefox on Android.
 
 11. **Sponsored Suggestion Loss via Merino Neutralization**:
     Activating Firefox Merino Block breaks all remote sponsored suggestions in the address bar (Awesomebar) by rerouting `ohttp-merino.mozilla.fastly-edge.com` to `0.0.0.0` and forcing sponsored display gates to false. Standard local browsing history, bookmarks, and direct search engine autocomplete suggestions remain functional and intact.
+
+12. **AI Surface Boundaries & Functional Scope**:
+    Activating Firefox AI Block neutralizes web page summarization entrypoints and `AiSummarize*` telemetry reporting via internal kill-switches. On-device translations (`GeckoView` language packs) remain fully preserved. Voice search requires no patching because Firefox delegates voice capture directly to system speech recognition intents without third-party AI SDK overhead. Remote summarization upload telemetry pipelines remain under ongoing tracking.
 
 ---
 
@@ -166,3 +170,18 @@ Technical documentation and patch catalog for Firefox on Android.
   - Injects bytecode overrides forcing `isSponsored` and `showSponsoredSuggestions` methods to return `false` unconditionally.
 - **Awesomebar Metrics Suppression**:
   - Stubs sponsored impression, click-through, and engagement telemetry dispatchers in Awesomebar suggestion providers.
+
+### 7. Firefox AI Block Layer
+
+- **Typology**: `bytecodePatch` (`Firefox AI Block`, default `false` opt-in).
+- **Objective**: Disarm client-side AI page summarization and associated telemetry.
+- **Summarization Disablement (`blockSummarization`)**:
+  - Neutralizes entrypoints for web page summarization, preventing UI action buttons and background model initialization from loading.
+- **AI Telemetry Suppression (`blockAiTelemetry`)**:
+  - Stubs `AiSummarize*` event recording pipelines and Glean metric dispatchers related to user interactions with AI tools.
+- **Kill-Switch Enforcement (`enforceAiKillSwitch`)**:
+  - Forces internal local feature gates and remote-configuration AI kill-switches to active disabled states.
+- **Preserved & Deferred Surfaces**:
+  - *On-Device Translations*: Fully preserved; language model packs handled by GeckoView continue operating normally.
+  - *Voice Search*: Requires no patch hooks; delegates cleanly to system-level speech recognition without bundled third-party AI SDKs.
+  - *Telemetry Audit Status*: Tracking remote summarization upload endpoints remains flagged for future telemetry revisions.
