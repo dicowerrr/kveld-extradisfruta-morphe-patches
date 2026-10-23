@@ -1,3 +1,15 @@
+## [1.1.0](https://github.com/dicowerrr/kveld-extradisfruta-morphe-patches/compare/v1.0.0...v1.1.0) (2026-10-23)
+
+### Bug Fixes
+
+* **firefox:** disable crashhelper service for native trim ([aa47214](https://github.com/dicowerrr/kveld-extradisfruta-morphe-patches/commit/aa4721458d5eba03b696b6728459ca8b4617d0e8))
+
+### New Features
+
+* **firefox:** block merino sponsored suggestions ([f1601b7](https://github.com/dicowerrr/kveld-extradisfruta-morphe-patches/commit/f1601b7533ff246a4e8527e5a2eaf705cddacd07))
+* **firefox:** enforce ai features block ([bd7193e](https://github.com/dicowerrr/kveld-extradisfruta-morphe-patches/commit/bd7193eb83ecdf4e89987738722c0f881b179873))
+* **firefox:** strip telemetry native libs fennec-style ([f534feb](https://github.com/dicowerrr/kveld-extradisfruta-morphe-patches/commit/f534feb539e07833819dd07a5f16680787564820))
+
 ## 1.0.0 (2026-10-23)
 
 ### Bug Fixes

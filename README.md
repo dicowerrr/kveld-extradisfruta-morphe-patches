@@ -179,7 +179,7 @@ To use them, add `kveld9/kveld-morphe-patches` as a second source in Morphe Mana
 </details>
 
 <details>
-<summary>Firefox&nbsp;&nbsp;•&nbsp;&nbsp;<b>5 patches</b></summary>
+<summary>Firefox&nbsp;&nbsp;•&nbsp;&nbsp;<b>7 patches</b></summary>
 <br>
 
 **Supported versions:**
@@ -192,7 +192,9 @@ To use them, add `kveld9/kveld-morphe-patches` as a second source in Morphe Mana
 |----------|----------------|-----------|
 | **Block Telemetry & Trackers** | Neutralizes Adjust attribution and Mozilla Glean telemetry dispatchers, disables Socorro crash reporting, and rewrites telemetry endpoints to 0.0.0.0. | • Custom Blocked Hosts |
 | **Bypass Compatibility Checks** | Normalizes manifest sharedUserId attributes and neutralizes client-side environment checks so Firefox runs reliably across sideloaded and custom environments. |  |
-| **Firefox Debloat** | Removes built-in WebExtension asset bundles, disables the Gecko profiler foreground service, and stubs unused onboarding media to reduce APK footprint and background overhead. | • Prune Built-in WebExtension Bundles<br>• Disable Gecko Profiler Service<br>• Stub Onboarding Media |
+| **Firefox AI Block Enforcement** | Enforces client-side blocking of Firefox AI features, suppressing page summarization menu entrypoints, neutralizing AI telemetry recording calls, and enforcing AI blocking controls. | • Block Page Summarization<br>• Neutralize AI Summarization Telemetry<br>• Enforce Master AI Block Kill-Switch |
+| **Firefox Debloat** | Removes built-in WebExtension asset bundles, zeroes unneeded crash helper native library, disables the Gecko profiler and standalone CrashHelper services, and stubs unused onboarding media to reduce APK footprint and background overhead. | • Prune Built-in WebExtension Bundles<br>• Disable Gecko Profiler Service<br>• Strip Crash Helper Native Library<br>• Stub Onboarding Media |
+| **Firefox Merino Block** | Neutralizes Firefox Suggest Merino client, suppresses sponsored suggestion display in search, disables sponsored suggestion Glean telemetry, and redirects Merino endpoints to 0.0.0.0. Breaks remote sponsored suggestions and remote top-sites. |  |
 | **Privacy Controls** | User-controlled privacy enhancements: screen capture bypass in private mode, granular permission stripping, network security hardening (user CA trust and CertificatePinner neutralization), share-link tracking parameter sanitization, and device data access neutralization. | • Allow Screenshots & Screen Capture<br>• Network Security Hardening (User CA Trust & Pinning Bypass)<br>• Clean Share Links<br>• Neutralize Device Data Harvesting<br>• Strip Camera Permission<br>• Strip Microphone Permissions<br>• Strip Location Permissions<br>• Strip Notification Permission<br>• Strip Media & Storage Permissions<br>• Strip Query All Packages Permission<br>• Strip Biometric Permissions |
 | **UX Declutter** | Skips the first-run onboarding carousel and welcome flow, and suppresses continuous onboarding dialogs and promotional prompts. | • Skip First-Run Onboarding<br>• Suppress Continuous Onboarding & Promos |
 

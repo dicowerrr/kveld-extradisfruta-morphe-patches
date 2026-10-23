@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "patches": [
     {
       "name": "AR Effects Slimmer",
@@ -793,8 +793,62 @@
       "options": []
     },
     {
+      "name": "Firefox AI Block Enforcement",
+      "description": "Enforces client-side blocking of Firefox AI features, suppressing page summarization menu entrypoints, neutralizing AI telemetry recording calls, and enforcing AI blocking controls.",
+      "default": false,
+      "dependencies": [],
+      "compatiblePackages": [
+        {
+          "packageName": "org.mozilla.firefox",
+          "name": "Firefox",
+          "description": null,
+          "apkFileType": "APK",
+          "appIconColor": "#FF7139",
+          "signatures": null,
+          "targets": [
+            {
+              "version": "158.0.2",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": "Download org.mozilla.firefox v158.0.2 (APK) arm64-v8a nodpi versionCode 2016191575 from APKMirror"
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "blockSummarization",
+          "title": "Block Page Summarization",
+          "description": "Suppresses AI page summarization menu exposure and neutralizes summarization entrypoints in Firefox menus.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "blockAiTelemetry",
+          "title": "Neutralize AI Summarization Telemetry",
+          "description": "Neutralizes call-site recording of Glean AI summarization metrics (AiSummarizeRequested, Started, Completed, Closed, Feedback, FirstResponse, ProviderInitialized, ConsentDisplayed, session_id) as defense-in-depth.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "enforceAiKillSwitch",
+          "title": "Enforce Master AI Block Kill-Switch",
+          "description": "Enforces the AI blocking master kill-switch to neutralize AI feature initialization and enhancement hooks while strictly preserving on-device translations.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        }
+      ]
+    },
+    {
       "name": "Firefox Debloat",
-      "description": "Removes built-in WebExtension asset bundles, disables the Gecko profiler foreground service, and stubs unused onboarding media to reduce APK footprint and background overhead.",
+      "description": "Removes built-in WebExtension asset bundles, zeroes unneeded crash helper native library, disables the Gecko profiler and standalone CrashHelper services, and stubs unused onboarding media to reduce APK footprint and background overhead.",
       "default": false,
       "dependencies": [],
       "compatiblePackages": [
@@ -836,6 +890,15 @@
           "values": null
         },
         {
+          "key": "stripTelemetryNativeLibs",
+          "title": "Strip Crash Helper Native Library",
+          "description": "Zeroes unneeded libcrashhelper.so binary and disables the standalone CrashHelper service.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
           "key": "stubOnboardingMedia",
           "title": "Stub Onboarding Media",
           "description": "Stubs tutorial and onboarding video files in res/raw/ if present.",
@@ -845,6 +908,32 @@
           "values": null
         }
       ]
+    },
+    {
+      "name": "Firefox Merino Block",
+      "description": "Neutralizes Firefox Suggest Merino client, suppresses sponsored suggestion display in search, disables sponsored suggestion Glean telemetry, and redirects Merino endpoints to 0.0.0.0. Breaks remote sponsored suggestions and remote top-sites.",
+      "default": false,
+      "dependencies": [],
+      "compatiblePackages": [
+        {
+          "packageName": "org.mozilla.firefox",
+          "name": "Firefox",
+          "description": null,
+          "apkFileType": "APK",
+          "appIconColor": "#FF7139",
+          "signatures": null,
+          "targets": [
+            {
+              "version": "158.0.2",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": "Download org.mozilla.firefox v158.0.2 (APK) arm64-v8a nodpi versionCode 2016191575 from APKMirror"
+            }
+          ]
+        }
+      ],
+      "options": []
     },
     {
       "name": "Fix Google Maps",
