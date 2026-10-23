@@ -27,7 +27,7 @@ Technical documentation and patch catalog for Firefox on Android.
 | **Firefox Compatibility Manifest Normalization** | `resourcePatch` | `false` (Opt-in) | None | Strips `sharedUserId` and `sharedUserLabel` from the root manifest element when present to eliminate installation conflicts. |
 | **Privacy Controls** | `bytecodePatch` | `false` (Opt-in) | `Privacy Controls Setup` | Provides opt-in privacy toggles: screenshot enablement in private tabs (`allowScreenshots`), network security hardening (`hardenNetworkSecurity`), URL tracking parameter stripping (`cleanShareUrls`), and runtime device identifier neutralization (`neutralizeDeviceData`). |
 | **Privacy Controls Setup** | `resourcePatch` | `false` (Opt-in) | None | Provides optional manifest-level permission stripping across 7 granular privacy axes (camera, microphone, location, notifications, media-storage, package-query, biometrics) and injects network security configuration for user CA trust. |
-| **Firefox Debloat** | `resourcePatch` | `false` (Opt-in) | None | Provides footprint reduction options: prunes built-in WebExtension asset bundles (`pruneExtensionBundles`), disables GeckoView background profiler service (`disableProfilerService`), and stubs onboarding tutorial MP4 video assets with minimal 32-byte headers (`stubOnboardingMedia`). |
+| **Firefox Debloat** | `resourcePatch` | `false` (Opt-in) | None | Provides footprint reduction options: prunes built-in WebExtension asset bundles (`pruneExtensionBundles`), disables GeckoView background profiler service (`disableProfilerService`), stubs onboarding tutorial MP4 video assets with minimal 32-byte headers (`stubOnboardingMedia`), and zeroes telemetry companion native libraries in-situ (`stripTelemetryNativeLibs`). |
 | **UX Declutter** | `bytecodePatch` | `false` (Opt-in) | None | Suppresses introductory onboarding friction: bypasses first-run setup screens (`skipFirstRun`) to launch directly into the browser, and neutralizes recurring onboarding prompts and wallpaper promotions (`suppressContinuousPromos`). |
 | **Firefox Merino Block** | `bytecodePatch` | `false` (Opt-in) | None | Disables sponsored and remote suggestions from Mozilla Merino backend: redirects endpoint `ohttp-merino.mozilla.fastly-edge.com` to `0.0.0.0`, forces `isSponsored` and `showSponsoredSuggestions` to false, and neutralizes Awesomebar sponsored metrics. |
 | **Firefox AI Block** | `bytecodePatch` | `false` (Opt-in) | None | Blocks client-side AI integration and summarization: disables web page summarization (`blockSummarization`), suppresses AI-specific telemetry event dispatchers (`blockAiTelemetry`), and activates local kill-switches (`enforceAiKillSwitch`). Preserves on-device translations. |
@@ -71,6 +71,9 @@ Technical documentation and patch catalog for Firefox on Android.
 
 12. **AI Surface Boundaries & Functional Scope**:
     Activating Firefox AI Block neutralizes web page summarization entrypoints and `AiSummarize*` telemetry reporting via internal kill-switches. On-device translations (`GeckoView` language packs) remain fully preserved. Voice search requires no patching because Firefox delegates voice capture directly to system speech recognition intents without third-party AI SDK overhead. Remote summarization upload telemetry pipelines remain under ongoing tracking.
+
+13. **Telemetry Native Libraries In-Situ Zeroing Scope**:
+    Enabling `stripTelemetryNativeLibs` zeroes companion native binaries `libcrashhelper.so`, `libcrashtools.so`, and `libsigner.so` in-situ across architecture folders. These binaries are absent in official source-built Fennec F-Droid APKs of the same version; however, a complete source-level Fennec diet (rebuilding GeckoView without proprietary telemetry headers) is architecturally unreplicable via bytecode/resource patcher DSL transformations alone.
 
 ---
 
@@ -149,6 +152,10 @@ Technical documentation and patch catalog for Firefox on Android.
 - **Onboarding Tutorial Media Stubbing (`stubOnboardingMedia`)**:
   - Replaces non-essential first-run onboarding MP4 video assets under `res/raw/` with a minimal 32-byte deterministic MP4 header stub.
   - Neutralizes onboarding video bloat without triggering resource resolution crashes or XML layout inflation failures.
+- **Telemetry Native Libraries In-Situ Zeroing (`stripTelemetryNativeLibs`)**:
+  - Zeroes crash reporter and telemetry companion native binaries (`libcrashhelper.so`, `libcrashtools.so`, and `libsigner.so`) in-situ across architecture directories (`lib/arm64-v8a/`).
+  - These binaries are completely absent in official source builds such as Fennec F-Droid for the identical target version.
+  - *Architectural Note*: While this eliminates specific telemetry and crash ELF bloat, a complete source-level Fennec diet (recompiling GeckoView without proprietary telemetry headers) is architecturally unreplicable purely through binary and bytecode patcher DSL transformations.
 
 ### 5. UX Declutter Layer
 

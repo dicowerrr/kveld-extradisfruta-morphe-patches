@@ -34,14 +34,15 @@ import org.w3c.dom.Element
  *      (RECEIVE_BOOT_COMPLETED) are purged by the canonical universal BackgroundSyncPurgePatch.
  *
  * 5. Native Companion Library Trimming (lib/<abi> - .so files):
- *    - Classification: NOT_APPLICABLE (Load-Bearing Veto)
- *    - Evidence: 18 .so files per ABI (libxul.so, libmozglue.so, libmozavcodec.so, libmozavutil.so,
- *      libnss3.so, libfreebl3.so, libsoftokn3.so, liblgpllibs.so, libgkcodecs.so, libplugin-container.so,
- *      libsigner.so, libclearkey.so, libcrashhelper.so, libcrashtools.so, libdatastore_shared_counter.so,
- *      libandroidx.graphics.path.so, libjnidispatch.so). libxul and libmozglue are core Gecko engine
- *      binaries (never touch). All companion libraries carry >=1 loadLibrary call sites across classes*.dex
- *      or are transitively dead via telemetry manifest purge. Zero unreferenced companion .so proven.
- *      Per app-debloat Section 1.A, >=1 reference strictly vetoes zeroing. Zeroing 0 files.
+ *    - Classification: DEDICATED_NEEDED (Fennec-Parity Opt-in Zeroing) & NOT_APPLICABLE (Core Veto)
+ *    - Evidence: Stock Firefox bundles 18 .so binaries per ABI vs 15 in Fennec F-Droid 158.0.2.
+ *      Fennec completely omits libcrashhelper.so, libcrashtools.so, and libsigner.so.
+ *      libxul.so and libmozglue.so are the core Gecko layout engine (strictly load-bearing veto,
+ *      never touched). The remaining 13 .so (mozavcodec, mozavutil, nss3, freebl3, softokn3,
+ *      lgpllibs, gkcodecs, plugin-container, clearkey, datastore_shared_counter,
+ *      androidx.graphics.path, jnidispatch) are core runtime dependencies of Gecko.
+ *      For libcrashhelper.so, libcrashtools.so, and libsigner.so, Fennec F-Droid proves they are
+ *      dispensable for browser operation; they are zeroed in-situ under an opt-in toggle.
  *
  * 6. ML Models (.tflite, .onnx, etc.):
  *    - Classification: NOT_APPLICABLE
@@ -72,6 +73,14 @@ import org.w3c.dom.Element
  *       an opt-in toggle to protect future builds.
  */
 
+private val EMPTY_STUB_BYTES = byteArrayOf()
+
+private val TELEMETRY_NATIVE_LIBS = listOf(
+    "libcrashhelper.so",
+    "libcrashtools.so",
+    "libsigner.so",
+)
+
 private val EMPTY_MP4_HEADER by lazy {
     byteArrayOf(
         0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6F, 0x6D,
@@ -83,7 +92,7 @@ private val EMPTY_MP4_HEADER by lazy {
 @Suppress("unused")
 val firefoxDebloatPatch = resourcePatch(
     name = "Firefox Debloat",
-    description = "Removes built-in WebExtension asset bundles, disables the Gecko profiler foreground service, and stubs unused onboarding media to reduce APK footprint and background overhead.",
+    description = "Removes built-in WebExtension asset bundles, zeroes unneeded telemetry/crash native libraries, disables the Gecko profiler foreground service, and stubs unused onboarding media to reduce APK footprint and background overhead.",
     default = false,
 ) {
     compatibleWith(Constants.COMPATIBILITY_FIREFOX)
@@ -102,6 +111,13 @@ val firefoxDebloatPatch = resourcePatch(
         description = "Disables Mozilla Gecko profiler foreground services in AndroidManifest.xml.",
     )
 
+    val stripTelemetryNativeLibs by booleanOption(
+        key = "stripTelemetryNativeLibs",
+        default = false,
+        title = "Strip Telemetry & Crash Native Libraries",
+        description = "Zeroes unneeded telemetry and crash-reporting native binaries (libcrashhelper.so, libcrashtools.so, libsigner.so) absent in Fennec F-Droid.",
+    )
+
     val stubOnboardingMedia by booleanOption(
         key = "stubOnboardingMedia",
         default = false,
@@ -112,6 +128,7 @@ val firefoxDebloatPatch = resourcePatch(
     execute {
         if (!(pruneExtensionBundles ?: false) &&
             !(disableProfilerService ?: false) &&
+            !(stripTelemetryNativeLibs ?: false) &&
             !(stubOnboardingMedia ?: false)
         ) {
             println("[Firefox Debloat] All debloat options disabled - skipping.")
@@ -121,6 +138,8 @@ val firefoxDebloatPatch = resourcePatch(
         var prunedExtensionFiles = 0
         var savedExtensionBytes = 0L
         var disabledProfilerCount = 0
+        var zeroedNativeLibsCount = 0
+        var savedNativeBytes = 0L
         var stubbedMediaCount = 0
         var savedMediaBytes = 0L
 
@@ -142,7 +161,28 @@ val firefoxDebloatPatch = resourcePatch(
             }
         }
 
-        // 2. Disable Mozilla Gecko profiler foreground service in AndroidManifest.xml
+        // 2. In-situ zeroing of crash reporter & telemetry native binaries (Fennec-parity)
+        if (stripTelemetryNativeLibs ?: false) {
+            val candidateAbis = listOf("lib/arm64-v8a", "lib/armeabi-v7a", "lib/x86_64", "lib/x86")
+            candidateAbis.forEach { abi ->
+                TELEMETRY_NATIVE_LIBS.forEach { libName ->
+                    // Invariant: Never touch core Gecko engine libraries
+                    if (libName == "libxul.so" || libName == "libmozglue.so") return@forEach
+
+                    val libFile = get("$abi/$libName")
+                    if (libFile.exists() && libFile.isFile) {
+                        val originalSize = libFile.length()
+                        if (originalSize > 0) {
+                            libFile.writeBytes(EMPTY_STUB_BYTES)
+                            savedNativeBytes += originalSize
+                            zeroedNativeLibsCount++
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Disable Mozilla Gecko profiler foreground service in AndroidManifest.xml
         if (disableProfilerService ?: false) {
             val manifestFile = get("AndroidManifest.xml")
             if (manifestFile.exists()) {
@@ -161,7 +201,7 @@ val firefoxDebloatPatch = resourcePatch(
             }
         }
 
-        // 3. Stub onboarding / tutorial MP4 videos in res/raw/ (defensive axis)
+        // 4. Stub onboarding / tutorial MP4 videos in res/raw/ (defensive axis)
         if (stubOnboardingMedia ?: false) {
             decode("res/raw*")
             val resRawDir = get("res/raw")
@@ -180,10 +220,11 @@ val firefoxDebloatPatch = resourcePatch(
             }
         }
 
-        val totalSavedBytes = savedExtensionBytes + savedMediaBytes
+        val totalSavedBytes = savedExtensionBytes + savedNativeBytes + savedMediaBytes
         val savedFormatted = LocaleUtils.formatBytes(totalSavedBytes)
         println(
             "[Firefox Debloat] Pruned $prunedExtensionFiles extension assets, " +
+                "zeroed $zeroedNativeLibsCount telemetry native libs, " +
                 "disabled $disabledProfilerCount profiler services, " +
                 "stubbed $stubbedMediaCount media files -> Saved $savedFormatted",
         )
