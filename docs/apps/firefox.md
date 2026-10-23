@@ -29,6 +29,7 @@ Technical documentation and patch catalog for Firefox on Android.
 | **Privacy Controls Setup** | `resourcePatch` | `false` (Opt-in) | None | Provides optional manifest-level permission stripping across 7 granular privacy axes (camera, microphone, location, notifications, media-storage, package-query, biometrics) and injects network security configuration for user CA trust. |
 | **Firefox Debloat** | `resourcePatch` | `false` (Opt-in) | None | Provides footprint reduction options: prunes built-in WebExtension asset bundles (`pruneExtensionBundles`), disables GeckoView background profiler service (`disableProfilerService`), and stubs onboarding tutorial MP4 video assets with minimal 32-byte headers (`stubOnboardingMedia`). |
 | **UX Declutter** | `bytecodePatch` | `false` (Opt-in) | None | Suppresses introductory onboarding friction: bypasses first-run setup screens (`skipFirstRun`) to launch directly into the browser, and neutralizes recurring onboarding prompts and wallpaper promotions (`suppressContinuousPromos`). |
+| **Firefox Merino Block** | `bytecodePatch` | `false` (Opt-in) | None | Disables sponsored and remote suggestions from Mozilla Merino backend: redirects endpoint `ohttp-merino.mozilla.fastly-edge.com` to `0.0.0.0`, forces `isSponsored` and `showSponsoredSuggestions` to false, and neutralizes Awesomebar sponsored metrics. |
 
 ---
 
@@ -63,6 +64,9 @@ Technical documentation and patch catalog for Firefox on Android.
 
 10. **First-Run Setup & Terms Bypass**:
     The `skipFirstRun` option in UX Declutter forces the onboarded version check to `Int.MAX_VALUE`, bypassing the 3-step introductory flow and opening directly to navigation. Consequently, the user will not see first-run disclosures, default browser prompts, theme selections, or search engine picker dialogs; these remain configurable at any time in Firefox Settings.
+
+11. **Sponsored Suggestion Loss via Merino Neutralization**:
+    Activating Firefox Merino Block breaks all remote sponsored suggestions in the address bar (Awesomebar) by rerouting `ohttp-merino.mozilla.fastly-edge.com` to `0.0.0.0` and forcing sponsored display gates to false. Standard local browsing history, bookmarks, and direct search engine autocomplete suggestions remain functional and intact.
 
 ---
 
@@ -151,3 +155,14 @@ Technical documentation and patch catalog for Firefox on Android.
 - **Continuous Promotion Suppression (`suppressContinuousPromos`)**:
   - Stubs `ContinuousOnboardingFeature.start` and `showDialog` entrypoints with immediate `return-void` instructions.
   - Neutralizes recurring promotional popups, onboarding nudge dialogs, and sponsored wallpaper promotion overlays.
+
+### 6. Firefox Merino Block Layer
+
+- **Typology**: `bytecodePatch` (`Firefox Merino Block`, default `false` opt-in).
+- **Objective**: Neutralize remote sponsored suggestion queries and tracking in the address bar (Awesomebar).
+- **Endpoint Redirection**:
+  - Intercepts `SuggestMerinoClient` network initialization and redirects the Merino OHTTP endpoint `ohttp-merino.mozilla.fastly-edge.com` to `0.0.0.0`.
+- **Sponsored Flag Neutralization**:
+  - Injects bytecode overrides forcing `isSponsored` and `showSponsoredSuggestions` methods to return `false` unconditionally.
+- **Awesomebar Metrics Suppression**:
+  - Stubs sponsored impression, click-through, and engagement telemetry dispatchers in Awesomebar suggestion providers.
