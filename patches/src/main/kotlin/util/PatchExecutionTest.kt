@@ -182,6 +182,18 @@ enum class TargetApp(
         patchDirectoryPart = "sdmse",
         referenceSha256 = Constants.SDMSE_INPUT_SHA256,
     ),
+    FIREFOX(
+        id = "firefox",
+        appName = "Firefox",
+        packageName = Constants.FIREFOX_PACKAGE_NAME,
+        candidateFilenames = listOf(
+            "org.mozilla.firefox_158.0.2-2016191575_minAPI26(arm64-v8a,armeabi-v7a,x86_64)(nodpi)_apkmirror.com.apk",
+            "firefox_${Constants.FIREFOX_TARGET_VERSION}.apk",
+        ),
+        filePattern = Regex("(?i).*(?:firefox|mozilla\\.firefox).*\\.(?:apk|apkm|xapk)$"),
+        patchDirectoryPart = "firefox",
+        referenceSha256 = Constants.FIREFOX_INPUT_SHA256,
+    ),
     ;
 
     companion object {
