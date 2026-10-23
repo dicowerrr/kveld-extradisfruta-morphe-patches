@@ -2,6 +2,7 @@ package app.morphe.patches.firefox
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.instructionsOrNull
+import app.morphe.patcher.extensions.InstructionExtensions.removeInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.bytecodePatch
@@ -10,7 +11,9 @@ import app.morphe.patcher.patch.stringOption
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.shared.Constants
 import app.morphe.patches.shared.cleanClassName
+import app.morphe.patches.shared.clearTryBlocks
 import app.morphe.patches.shared.disableComponentsWhere
+import app.morphe.patches.shared.ensureRegisterCount
 import app.morphe.patches.shared.removeComponentDiscoveryRegistrarsWhere
 import app.morphe.patches.shared.replaceWithReturnBoolean
 import app.morphe.patches.shared.setApplicationMetaData
@@ -304,6 +307,9 @@ private fun BytecodePatchContext.hookGleanTelemetry(
     val uploaderClasses = listOf(
         "Lmozilla/telemetry/glean/net/HttpUploader;",
         "Lmozilla/telemetry/glean/net/BaseUploader;",
+        "Lmozilla/components/service/glean/net/ConceptFetchHttpUploader;",
+        "Lmozilla/telemetry/glean/scheduler/PingUploadWorker;",
+        "Lmozilla/telemetry/glean/scheduler/PingUploadWorker\$Companion;",
     )
     for (classType in uploaderClasses) {
         val classDef = classDefByOrNull(classType) ?: continue
@@ -314,10 +320,50 @@ private fun BytecodePatchContext.hookGleanTelemetry(
             val sig = "$classType->${method.name}"
             if (sig in hookedSignatures) continue
 
-            if (method.name in setOf("triggerUpload", "enqueueUpload") && isSafeVoidDispatcher(method)) {
+            val methodName = method.name
+            if ((methodName in setOf("triggerUpload", "enqueueUpload") ||
+                    methodName.startsWith("performUpload") ||
+                    methodName.startsWith("enqueueWorker")) &&
+                isSafeVoidDispatcher(method)
+            ) {
                 method.addInstructions(0, "return-void")
                 hookedSignatures.add(sig)
-                hookedMethods.add("${cleanClassName(classType)}.${method.name}")
+                hookedMethods.add("${cleanClassName(classType)}.$methodName")
+            } else if (methodName == "doWork" &&
+                method.returnType == "Landroidx/work/ListenableWorker\$Result;" &&
+                method.implementation != null
+            ) {
+                method.clearTryBlocks()
+                method.ensureRegisterCount(1)
+                method.removeInstructions(0, method.implementation!!.instructions.count())
+                method.addInstructions(
+                    0,
+                    """
+                        new-instance v0, Landroidx/work/ListenableWorker${'$'}Result${'$'}Success;
+                        invoke-direct {v0}, Landroidx/work/ListenableWorker${'$'}Result${'$'}Success;-><init>()V
+                        return-object v0
+                    """.trimIndent(),
+                )
+                hookedSignatures.add(sig)
+                hookedMethods.add("${cleanClassName(classType)}.$methodName")
+            } else if ((methodName == "upload" || methodName.startsWith("doUpload")) &&
+                method.returnType == "Lmozilla/telemetry/glean/internal/UploadResult;" &&
+                method.implementation != null
+            ) {
+                method.clearTryBlocks()
+                method.ensureRegisterCount(2)
+                method.removeInstructions(0, method.implementation!!.instructions.count())
+                method.addInstructions(
+                    0,
+                    """
+                        new-instance v0, Lmozilla/telemetry/glean/internal/UploadResult${'$'}Done;
+                        const/4 v1, 0x0
+                        invoke-direct {v0, v1}, Lmozilla/telemetry/glean/internal/UploadResult${'$'}Done;-><init>(B)V
+                        return-object v0
+                    """.trimIndent(),
+                )
+                hookedSignatures.add(sig)
+                hookedMethods.add("${cleanClassName(classType)}.$methodName")
             }
         }
     }
