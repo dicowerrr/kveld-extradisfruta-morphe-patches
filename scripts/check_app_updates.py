@@ -208,6 +208,25 @@ APP_SPECS: List[Dict[str, Any]] = [
         "source_url": "https://github.com/d4rken-org/sdmaid-se/releases",
         "allow_beta": True,
     },
+    # --------------------------------------------------------------------------
+    # Firefox (APKMirror) - copy-paste-filled from "ADD NEW APP HERE" template
+    # --------------------------------------------------------------------------
+    {
+        "id": "firefox",
+        "name": "Firefox",
+        "package_name": "org.mozilla.firefox",
+        "constant_key": "FIREFOX_TARGET_VERSION",
+        "source_type": "apkmirror",
+        "source_name": "APKMirror",
+        "source_url": "https://www.apkmirror.com/apk/mozilla/firefox/",
+        "path_prefix": "/apk/mozilla/firefox/firefox-",
+        "allow_beta": False,
+        "variant_match": {
+            "arch": "arm64-v8a",
+            "dpi": "nodpi",
+            "type": "APK",
+        },
+    },
 ]
 
 # Build dependencies (toolchain components, not apps)
@@ -900,6 +919,28 @@ class TestUpdateChecker(unittest.TestCase):
             allow_beta=False,
         )
         self.assertEqual(ver, "5.201.1.1809")
+
+    def test_apkmirror_extraction_firefox(self) -> None:
+        """Verify APKMirror listing extraction for Firefox filters out betas and extracts stable version."""
+        fixture_html = """
+        <div>
+          <a class="fontBlack" href="/apk/mozilla/firefox/firefox-159-0-beta-1-release/">
+            Firefox Fast &amp; Private Browser 159.0 beta 1
+          </a>
+          <a class="fontBlack" href="/apk/mozilla/firefox/firefox-158-0-2-release/">
+            Firefox Fast &amp; Private Browser 158.0.2
+          </a>
+          <a class="fontBlack" href="/apk/other-dev/other-app/other-release/">
+            Other App 1.0.0
+          </a>
+        </div>
+        """
+        ver = extract_apkmirror_version(
+            fixture_html,
+            path_prefix="/apk/mozilla/firefox/firefox-",
+            allow_beta=False,
+        )
+        self.assertEqual(ver, "158.0.2")
 
     def test_apkpure_extraction_newer_download_version(self) -> None:
         """Verify APKPure extracts newer downloadable version from download button."""

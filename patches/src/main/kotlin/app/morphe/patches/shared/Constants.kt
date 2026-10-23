@@ -217,4 +217,21 @@ object Constants {
             )
         )
     )
+
+    const val FIREFOX_PACKAGE_NAME = "org.mozilla.firefox"
+    const val FIREFOX_TARGET_VERSION = "158.0.2"
+    const val FIREFOX_INPUT_SHA256 = ""
+
+    val COMPATIBILITY_FIREFOX = Compatibility(
+        name = "Firefox",
+        packageName = FIREFOX_PACKAGE_NAME,
+        apkFileType = ApkFileType.APK,
+        appIconColor = 0xFF7139,
+        targets = listOf(
+            AppTarget(
+                version = FIREFOX_TARGET_VERSION,
+                description = "Download org.mozilla.firefox v158.0.2 (APK) arm64-v8a nodpi versionCode 2016191575 from APKMirror",
+            )
+        )
+    )
 }
