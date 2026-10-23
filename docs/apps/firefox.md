@@ -27,6 +27,7 @@ Technical documentation and patch catalog for Firefox on Android.
 | **Firefox Compatibility Manifest Normalization** | `resourcePatch` | `false` (Opt-in) | None | Strips `sharedUserId` and `sharedUserLabel` from the root manifest element when present to eliminate installation conflicts. |
 | **Privacy Controls** | `bytecodePatch` | `false` (Opt-in) | `Privacy Controls Setup` | Provides opt-in privacy toggles: screenshot enablement in private tabs (`allowScreenshots`), network security hardening (`hardenNetworkSecurity`), URL tracking parameter stripping (`cleanShareUrls`), and runtime device identifier neutralization (`neutralizeDeviceData`). |
 | **Privacy Controls Setup** | `resourcePatch` | `false` (Opt-in) | None | Provides optional manifest-level permission stripping across 7 granular privacy axes (camera, microphone, location, notifications, media-storage, package-query, biometrics) and injects network security configuration for user CA trust. |
+| **Firefox Debloat** | `resourcePatch` | `false` (Opt-in) | None | Provides footprint reduction options: prunes built-in WebExtension asset bundles (`pruneExtensionBundles`), disables GeckoView background profiler service (`disableProfilerService`), and stubs onboarding tutorial MP4 video assets with minimal 32-byte headers (`stubOnboardingMedia`). |
 
 ---
 
@@ -49,6 +50,12 @@ Technical documentation and patch catalog for Firefox on Android.
 
 6. **Network Security Hardening Scope**:
    The `hardenNetworkSecurity` option enables trust for user-added CA certificates and neutralizes certificate pinning checks. This should only be activated for legitimate local traffic inspection, debugging, or custom proxy setups, as trusting user CAs reduces defense-in-depth against untrusted local networks.
+
+7. **Preinstalled Extension Bundles Pruning**:
+   Enabling `pruneExtensionBundles` removes bundled WebExtension XPI/asset archives under `assets/extensions/`. While this achieves significant byte savings, any built-in browser helper add-ons packaged directly with the APK will be absent. Users can reinstall required add-ons manually via Mozilla Add-ons (AMO).
+
+8. **Profiler Service Disablement**:
+   Enabling `disableProfilerService` disables the GeckoView profiler recording and sampling background service. While saving CPU cycles and memory overhead, upstream Mozilla performance diagnostic captures via `about:profiling` will be unavailable.
 
 ---
 
@@ -114,3 +121,16 @@ Technical documentation and patch catalog for Firefox on Android.
   - `stripBiometrics`: Removes `USE_BIOMETRIC` and `USE_FINGERPRINT`.
 - **Vetoed Architectural Scope**:
   - Offline Mode is explicitly **VETOED** and excluded; as a web browser, Firefox requires continuous network communication to perform core navigation. Offline toggles are architecturally inapplicable.
+
+### 4. Debloat Layer
+
+- **Typology**: `resourcePatch` (`Firefox Debloat`, default `false` opt-in).
+- **WebExtension Bundles Pruning (`pruneExtensionBundles`)**:
+  - Prunes pre-packaged WebExtension assets stored under `assets/extensions/` within the APK archive.
+  - Generates measurable package footprint savings while preserving runtime extension installation support from external sources (addons.mozilla.org).
+- **GeckoView Profiler Service Disablement (`disableProfilerService`)**:
+  - Disables manifest registration for Gecko profiler components and services in `AndroidManifest.xml`.
+  - Suppresses background profiler polling and thread sampling allocation overhead.
+- **Onboarding Tutorial Media Stubbing (`stubOnboardingMedia`)**:
+  - Replaces non-essential first-run onboarding MP4 video assets under `res/raw/` with a minimal 32-byte deterministic MP4 header stub.
+  - Neutralizes onboarding video bloat without triggering resource resolution crashes or XML layout inflation failures.
