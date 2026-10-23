@@ -192,3 +192,33 @@ Technical documentation and patch catalog for Firefox on Android.
   - *On-Device Translations*: Fully preserved; language model packs handled by GeckoView continue operating normally.
   - *Voice Search*: Requires no patch hooks; delegates cleanly to system-level speech recognition without bundled third-party AI SDKs.
   - *Telemetry Audit Status*: Tracking remote summarization upload endpoints remains flagged for future telemetry revisions.
+
+---
+
+## Canonical Universal Patches (Companion Source)
+
+Generic debloat, asset slimming, and baseline maintenance are handled by universal patches from the companion canonical collection [kveld-morphe-patches](https://github.com/kveld9/kveld-morphe-patches). Add that repository source alongside this one in Morphe Manager to enable them.
+
+Empirical effects measured directly via in-situ probe on Firefox `158.0.2` (`arm64-v8a`):
+
+1. **Remove Extra Languages (Universal)**:
+   - Removes 150 unused `res/values-*` locale resource directories (preserving default and English locales).
+   - Measured footprint reduction: **24.75 MB**.
+
+2. **Remove Unused Screen Sizes**:
+   - Prunes 166 unneeded alternative screen density drawables and layouts.
+   - Measured footprint reduction: **124 KB**.
+
+3. **Clean App Packaging**:
+   - Cleans build-time metadata leftovers, non-standard root files, and packaging detritus.
+   - Measured probe result: **PASS** (no non-standard root detritus detected in standalone APK packaging).
+
+4. **Stop Background Sync (Universal)**:
+   - Strips `RECEIVE_BOOT_COMPLETED` permission and turns off 4 boot receivers and 4 background synchronization services in `AndroidManifest.xml`.
+   - Suppresses background device wakeups and alarms.
+
+5. **Shrink PNG/WebP Images**:
+   - Optimization pass skipped during fast probe verification (raw resource tables not fully decoded in probe mode). Standard lossless compression applies on full asset rebuild passes.
+
+6. **Remove Tracking Libraries**:
+   - Discovers no standard commercial third-party native tracking libraries (`.so`) in Firefox. Specific native telemetry binaries (`libcrashhelper.so`, `libcrashtools.so`, `libsigner.so`) are directly handled by the application-specific `stripTelemetryNativeLibs` toggle in **Firefox Debloat**.
