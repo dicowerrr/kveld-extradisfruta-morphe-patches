@@ -34,15 +34,21 @@ import org.w3c.dom.Element
  *      (RECEIVE_BOOT_COMPLETED) are purged by the canonical universal BackgroundSyncPurgePatch.
  *
  * 5. Native Companion Library Trimming (lib/<abi> - .so files):
- *    - Classification: DEDICATED_NEEDED (Fennec-Parity Opt-in Zeroing) & NOT_APPLICABLE (Core Veto)
+ *    - Classification: DEDICATED_NEEDED (libcrashhelper.so) & NOT_APPLICABLE (All others)
  *    - Evidence: Stock Firefox bundles 18 .so binaries per ABI vs 15 in Fennec F-Droid 158.0.2.
- *      Fennec completely omits libcrashhelper.so, libcrashtools.so, and libsigner.so.
- *      libxul.so and libmozglue.so are the core Gecko layout engine (strictly load-bearing veto,
- *      never touched). The remaining 13 .so (mozavcodec, mozavutil, nss3, freebl3, softokn3,
- *      lgpllibs, gkcodecs, plugin-container, clearkey, datastore_shared_counter,
- *      androidx.graphics.path, jnidispatch) are core runtime dependencies of Gecko.
- *      For libcrashhelper.so, libcrashtools.so, and libsigner.so, Fennec F-Droid proves they are
- *      dispensable for browser operation; they are zeroed in-situ under an opt-in toggle.
+ *      Audit of candidate binaries:
+ *      a) libcrashhelper.so: Companion for the standalone CrashHelper service. Safely zeroed in-situ
+ *         when paired with disabling org.mozilla.gecko.crashhelper.CrashHelper in AndroidManifest.xml.
+ *      b) libsigner.so: Loaded synchronously during early startup by the closed-source Adjust SDK
+ *         (com.adjust.sdk.sig.Signer). In stock Firefox, Adjust bytecode remains in classes*.dex
+ *         (unlike Fennec where Adjust source is removed). Zeroing libsigner.so causes UnsatisfiedLinkError
+ *         in the main process. Excluded from zeroing.
+ *      c) libcrashtools.so: Crashdump unwinding utility potentially referenced by CrashHandlerService
+ *         which GeckoRuntime.init requires at startup. Excluded from zeroing to guarantee startup safety.
+ *      d) libxul.so & libmozglue.so: Core Gecko layout engine (strictly load-bearing veto, never touched).
+ *      e) Remaining 13 .so: Core runtime dependencies of Gecko (mozavcodec, mozavutil, nss3, freebl3,
+ *         softokn3, lgpllibs, gkcodecs, plugin-container, clearkey, datastore_shared_counter,
+ *         androidx.graphics.path, jnidispatch).
  *
  * 6. ML Models (.tflite, .onnx, etc.):
  *    - Classification: NOT_APPLICABLE
@@ -59,12 +65,14 @@ import org.w3c.dom.Element
  *      (assets/extensions/ subdirectories). Sweep detected 19/19 heavy assets matching assets/extensions/ bundles (manifest.json).
  *      Pruning built-in WebExtensions requires a dedicated patch axis.
  *
- * 9. Gecko Profiler Service (org.mozilla.gecko.process.GeckoChildProcessServices$profiler):
+ * 9. Gecko Profiler & CrashHelper Services:
  *    - Classification: DEDICATED_NEEDED
  *    - Universal Failure Evidence: BackgroundSyncPurgePatch only matches standard androidx.work.*
  *      services and standard lifecycle receivers; it cannot target Mozilla Gecko-specific child
- *      process profiler services or Firefox performance diagnostic foreground services.
- *      Sweep detected profiler foreground service in manifest. Neutralization requires a dedicated axis.
+ *      process profiler services or the standalone CrashHelper service.
+ *      Disabling org.mozilla.gecko.crashhelper.CrashHelper prevents spawning the :crashhelper_disable_art_image_
+ *      process and prevents UnsatisfiedLinkError on zeroed libcrashhelper.so.
+ *      CrashHandlerService is strictly preserved as required by GeckoRuntime.init.
  *
  * 10. Onboarding & Tutorial Media (res/raw - .mp4 files):
  *     - Classification: NOT_APPLICABLE (Defensive stubbing retained)
@@ -77,8 +85,6 @@ private val EMPTY_STUB_BYTES = byteArrayOf()
 
 private val TELEMETRY_NATIVE_LIBS = listOf(
     "libcrashhelper.so",
-    "libcrashtools.so",
-    "libsigner.so",
 )
 
 private val EMPTY_MP4_HEADER by lazy {
@@ -92,7 +98,7 @@ private val EMPTY_MP4_HEADER by lazy {
 @Suppress("unused")
 val firefoxDebloatPatch = resourcePatch(
     name = "Firefox Debloat",
-    description = "Removes built-in WebExtension asset bundles, zeroes unneeded telemetry/crash native libraries, disables the Gecko profiler foreground service, and stubs unused onboarding media to reduce APK footprint and background overhead.",
+    description = "Removes built-in WebExtension asset bundles, zeroes unneeded crash helper native library, disables the Gecko profiler and standalone CrashHelper services, and stubs unused onboarding media to reduce APK footprint and background overhead.",
     default = false,
 ) {
     compatibleWith(Constants.COMPATIBILITY_FIREFOX)
@@ -114,8 +120,8 @@ val firefoxDebloatPatch = resourcePatch(
     val stripTelemetryNativeLibs by booleanOption(
         key = "stripTelemetryNativeLibs",
         default = false,
-        title = "Strip Telemetry & Crash Native Libraries",
-        description = "Zeroes unneeded telemetry and crash-reporting native binaries (libcrashhelper.so, libcrashtools.so, libsigner.so) absent in Fennec F-Droid.",
+        title = "Strip Crash Helper Native Library",
+        description = "Zeroes unneeded libcrashhelper.so binary and disables the standalone CrashHelper service.",
     )
 
     val stubOnboardingMedia by booleanOption(
@@ -137,7 +143,7 @@ val firefoxDebloatPatch = resourcePatch(
 
         var prunedExtensionFiles = 0
         var savedExtensionBytes = 0L
-        var disabledProfilerCount = 0
+        var disabledServicesCount = 0
         var zeroedNativeLibsCount = 0
         var savedNativeBytes = 0L
         var stubbedMediaCount = 0
@@ -161,7 +167,7 @@ val firefoxDebloatPatch = resourcePatch(
             }
         }
 
-        // 2. In-situ zeroing of crash reporter & telemetry native binaries (Fennec-parity)
+        // 2. In-situ zeroing of crash helper native binary
         if (stripTelemetryNativeLibs ?: false) {
             val candidateAbis = listOf("lib/arm64-v8a", "lib/armeabi-v7a", "lib/x86_64", "lib/x86")
             candidateAbis.forEach { abi ->
@@ -182,19 +188,27 @@ val firefoxDebloatPatch = resourcePatch(
             }
         }
 
-        // 3. Disable Mozilla Gecko profiler foreground service in AndroidManifest.xml
+        // 3. Disable profiler and standalone CrashHelper services in AndroidManifest.xml
+        val servicesToDisable = mutableSetOf<String>()
         if (disableProfilerService ?: false) {
+            servicesToDisable.add("org.mozilla.gecko.process.GeckoChildProcessServices\$profiler")
+            servicesToDisable.add("org.mozilla.fenix.perf.ProfilerService")
+        }
+        if ((stripTelemetryNativeLibs ?: false) || (disableProfilerService ?: false)) {
+            // Disables standalone CrashHelper service to prevent UnsatisfiedLinkError on zeroed libcrashhelper.so.
+            // Preserves CrashHandlerService intact, as required by GeckoRuntime.init.
+            servicesToDisable.add("org.mozilla.gecko.crashhelper.CrashHelper")
+        }
+
+        if (servicesToDisable.isNotEmpty()) {
             val manifestFile = get("AndroidManifest.xml")
             if (manifestFile.exists()) {
                 document(manifestFile.absolutePath).use { doc ->
                     val application = doc.documentElement.getElementsByTagName("application").item(0) as? Element
                     if (application != null) {
-                        val profilerServiceNames = setOf(
-                            "org.mozilla.gecko.process.GeckoChildProcessServices\$profiler",
-                            "org.mozilla.fenix.perf.ProfilerService",
-                        )
-                        disabledProfilerCount = application.disableComponentsWhere("service") { name ->
-                            name in profilerServiceNames || name.contains("profiler", ignoreCase = true)
+                        disabledServicesCount = application.disableComponentsWhere("service") { name ->
+                            name in servicesToDisable ||
+                                ((disableProfilerService ?: false) && name.contains("profiler", ignoreCase = true))
                         }
                     }
                 }
@@ -225,7 +239,7 @@ val firefoxDebloatPatch = resourcePatch(
         println(
             "[Firefox Debloat] Pruned $prunedExtensionFiles extension assets, " +
                 "zeroed $zeroedNativeLibsCount telemetry native libs, " +
-                "disabled $disabledProfilerCount profiler services, " +
+                "disabled $disabledServicesCount background services, " +
                 "stubbed $stubbedMediaCount media files -> Saved $savedFormatted",
         )
     }
