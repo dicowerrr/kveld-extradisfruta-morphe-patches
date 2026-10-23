@@ -179,6 +179,26 @@ To use them, add `kveld9/kveld-morphe-patches` as a second source in Morphe Mana
 </details>
 
 <details>
+<summary>Firefox&nbsp;&nbsp;•&nbsp;&nbsp;<b>5 patches</b></summary>
+<br>
+
+**Supported versions:**
+
+| 158.0.2 |
+| :---: |
+| Download org.mozilla.firefox v158.0.2 (APK) arm64-v8a nodpi versionCode 2016191575 from APKMirror |
+
+| Patch | Description | Options |
+|----------|----------------|-----------|
+| **Block Telemetry & Trackers** | Neutralizes Adjust attribution and Mozilla Glean telemetry dispatchers, disables Socorro crash reporting, and rewrites telemetry endpoints to 0.0.0.0. | • Custom Blocked Hosts |
+| **Bypass Compatibility Checks** | Normalizes manifest sharedUserId attributes and neutralizes client-side environment checks so Firefox runs reliably across sideloaded and custom environments. |  |
+| **Firefox Debloat** | Removes built-in WebExtension asset bundles, disables the Gecko profiler foreground service, and stubs unused onboarding media to reduce APK footprint and background overhead. | • Prune Built-in WebExtension Bundles<br>• Disable Gecko Profiler Service<br>• Stub Onboarding Media |
+| **Privacy Controls** | User-controlled privacy enhancements: screen capture bypass in private mode, granular permission stripping, network security hardening (user CA trust and CertificatePinner neutralization), share-link tracking parameter sanitization, and device data access neutralization. | • Allow Screenshots & Screen Capture<br>• Network Security Hardening (User CA Trust & Pinning Bypass)<br>• Clean Share Links<br>• Neutralize Device Data Harvesting<br>• Strip Camera Permission<br>• Strip Microphone Permissions<br>• Strip Location Permissions<br>• Strip Notification Permission<br>• Strip Media & Storage Permissions<br>• Strip Query All Packages Permission<br>• Strip Biometric Permissions |
+| **UX Declutter** | Skips the first-run onboarding carousel and welcome flow, and suppresses continuous onboarding dialogs and promotional prompts. | • Skip First-Run Onboarding<br>• Suppress Continuous Onboarding & Promos |
+
+</details>
+
+<details>
 <summary>Moovit&nbsp;&nbsp;•&nbsp;&nbsp;<b>5 patches</b></summary>
 <br>
 
@@ -397,7 +417,7 @@ For bug reports, patch inquiries, or feature proposals, open an issue using the 
 <!-- CONTRIBUTORS_START -->
 | Contributor | Role & Contributions |
 | :--- | :--- |
-| <a href="https://github.com/aeries0x"><img src="https://github.com/aeries0x.png" alt="@aeries0x" width="48" height="48" style="border-radius: 50%;" /><br><b>@aeries0x</b></a> | Feature request: Proposed X – Default reply sorting (open replies sorted by Likes) feature request ([#12](https://github.com/kveld9/kveld-extra-morphe-patches/issues/12)). |
+| <a href="https://github.com/aeries0x"><img src="https://github.com/aeries0x.png" alt="@aeries0x" width="48" height="48" style="border-radius: 50%;" /><br><b>@aeries0x</b></a> | Feature request: Proposed X – Default reply sorting (open replies sorted by Likes) feature request ([#12](https://github.com/dicowerrr/kveld-extradisfruta-morphe-patches/issues/12)). |
 <!-- CONTRIBUTORS_END -->
 
 <p align="center"><a href="#top"><b>&uarr; Back to top</b></a></p>

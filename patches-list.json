@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.26.1",
+  "version": "1.0.0",
   "patches": [
     {
       "name": "AR Effects Slimmer",
@@ -137,6 +137,44 @@
         }
       ],
       "options": []
+    },
+    {
+      "name": "Block Telemetry & Trackers",
+      "description": "Neutralizes Adjust attribution and Mozilla Glean telemetry dispatchers, disables Socorro crash reporting, and rewrites telemetry endpoints to 0.0.0.0.",
+      "default": true,
+      "dependencies": [
+        "ResourcePatch"
+      ],
+      "compatiblePackages": [
+        {
+          "packageName": "org.mozilla.firefox",
+          "name": "Firefox",
+          "description": null,
+          "apkFileType": "APK",
+          "appIconColor": "#FF7139",
+          "signatures": null,
+          "targets": [
+            {
+              "version": "158.0.2",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": "Download org.mozilla.firefox v158.0.2 (APK) arm64-v8a nodpi versionCode 2016191575 from APKMirror"
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "custom-blocked-hosts",
+          "title": "Custom Blocked Hosts",
+          "description": "Comma-separated list of additional telemetry hostnames or domains to redirect to 0.0.0.0. Single-label, credentialed-URL, and IPv6 entries are skipped.",
+          "required": false,
+          "type": "kotlin.String",
+          "default": null,
+          "values": null
+        }
+      ]
     },
     {
       "name": "Block Telemetry & Trackers",
@@ -463,6 +501,34 @@
       "options": []
     },
     {
+      "name": "Bypass Compatibility Checks",
+      "description": "Normalizes manifest sharedUserId attributes and neutralizes client-side environment checks so Firefox runs reliably across sideloaded and custom environments.",
+      "default": false,
+      "dependencies": [
+        "ResourcePatch"
+      ],
+      "compatiblePackages": [
+        {
+          "packageName": "org.mozilla.firefox",
+          "name": "Firefox",
+          "description": null,
+          "apkFileType": "APK",
+          "appIconColor": "#FF7139",
+          "signatures": null,
+          "targets": [
+            {
+              "version": "158.0.2",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": "Download org.mozilla.firefox v158.0.2 (APK) arm64-v8a nodpi versionCode 2016191575 from APKMirror"
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Bypass Effects Region Restriction",
       "description": "Fixes effects, transitions, and templates failing to load (ByteDance Shark WAF block) by spoofing device_platform to 'windows' and resetting deviceId in effect requests.",
       "default": true,
@@ -727,6 +793,60 @@
       "options": []
     },
     {
+      "name": "Firefox Debloat",
+      "description": "Removes built-in WebExtension asset bundles, disables the Gecko profiler foreground service, and stubs unused onboarding media to reduce APK footprint and background overhead.",
+      "default": false,
+      "dependencies": [],
+      "compatiblePackages": [
+        {
+          "packageName": "org.mozilla.firefox",
+          "name": "Firefox",
+          "description": null,
+          "apkFileType": "APK",
+          "appIconColor": "#FF7139",
+          "signatures": null,
+          "targets": [
+            {
+              "version": "158.0.2",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": "Download org.mozilla.firefox v158.0.2 (APK) arm64-v8a nodpi versionCode 2016191575 from APKMirror"
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "pruneExtensionBundles",
+          "title": "Prune Built-in WebExtension Bundles",
+          "description": "Removes built-in WebExtension asset bundles from assets/extensions/ to reduce APK size.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "disableProfilerService",
+          "title": "Disable Gecko Profiler Service",
+          "description": "Disables Mozilla Gecko profiler foreground services in AndroidManifest.xml.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "stubOnboardingMedia",
+          "title": "Stub Onboarding Media",
+          "description": "Stubs tutorial and onboarding video files in res/raw/ if present.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        }
+      ]
+    },
+    {
       "name": "Fix Google Maps",
       "description": "Restores Google Maps rendering by spoofing the original package signature to Google Play Services.",
       "default": true,
@@ -916,6 +1036,135 @@
         }
       ],
       "options": []
+    },
+    {
+      "name": "Privacy Controls",
+      "description": "User-controlled privacy enhancements: screen capture bypass in private mode, granular permission stripping, network security hardening (user CA trust and CertificatePinner neutralization), share-link tracking parameter sanitization, and device data access neutralization.",
+      "default": false,
+      "dependencies": [
+        "ResourcePatch",
+        "BytecodePatch"
+      ],
+      "compatiblePackages": [
+        {
+          "packageName": "org.mozilla.firefox",
+          "name": "Firefox",
+          "description": null,
+          "apkFileType": "APK",
+          "appIconColor": "#FF7139",
+          "signatures": null,
+          "targets": [
+            {
+              "version": "158.0.2",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": "Download org.mozilla.firefox v158.0.2 (APK) arm64-v8a nodpi versionCode 2016191575 from APKMirror"
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "allowScreenshots",
+          "title": "Allow Screenshots & Screen Capture",
+          "description": "Bypasses FLAG_SECURE window restrictions in private browsing tabs and sets allowAudioPlaybackCapture in the manifest so screen captures and recordings are not blacked out.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "hardenNetworkSecurity",
+          "title": "Network Security Hardening (User CA Trust & Pinning Bypass)",
+          "description": "Trusts user CA certificates in network_security_config.xml and neutralizes OkHttp CertificatePinner checks for local proxy inspection. WARNING: Enables TLS proxy inspection.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "cleanShareUrls",
+          "title": "Clean Share Links",
+          "description": "Strips tracking parameters (utm_*, fbclid, gclid, igshid, msclkid, mc_eid, twclid) from URLs shared to the Android share sheet.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "neutralizeDeviceData",
+          "title": "Neutralize Device Data Harvesting",
+          "description": "Neutralizes runtime access to Google Advertising ID, BATTERY_CHANGED broadcast events, motion sensor listeners, and last-known location queries.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "stripCamera",
+          "title": "Strip Camera Permission",
+          "description": "Removes android.permission.CAMERA from AndroidManifest.xml. Disables QR code scanning and camera web inputs.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "stripMicrophone",
+          "title": "Strip Microphone Permissions",
+          "description": "Removes RECORD_AUDIO and CAPTURE_AUDIO_OUTPUT from AndroidManifest.xml. Disables voice search and microphone web inputs.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "stripLocation",
+          "title": "Strip Location Permissions",
+          "description": "Removes ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, and ACCESS_BACKGROUND_LOCATION from AndroidManifest.xml.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "stripNotifications",
+          "title": "Strip Notification Permission",
+          "description": "Removes android.permission.POST_NOTIFICATIONS from AndroidManifest.xml.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "stripMediaStorage",
+          "title": "Strip Media & Storage Permissions",
+          "description": "Removes READ_MEDIA_*, ACCESS_MEDIA_LOCATION, and legacy storage permissions from AndroidManifest.xml.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "stripPackageQuery",
+          "title": "Strip Query All Packages Permission",
+          "description": "Removes android.permission.QUERY_ALL_PACKAGES from AndroidManifest.xml to prevent installed app inventory queries.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "stripBiometrics",
+          "title": "Strip Biometric Permissions",
+          "description": "Removes USE_BIOMETRIC and USE_FINGERPRINT permissions from AndroidManifest.xml.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        }
+      ]
     },
     {
       "name": "Remove Ads",
@@ -1340,6 +1589,51 @@
         }
       ],
       "options": []
+    },
+    {
+      "name": "UX Declutter",
+      "description": "Skips the first-run onboarding carousel and welcome flow, and suppresses continuous onboarding dialogs and promotional prompts.",
+      "default": false,
+      "dependencies": [],
+      "compatiblePackages": [
+        {
+          "packageName": "org.mozilla.firefox",
+          "name": "Firefox",
+          "description": null,
+          "apkFileType": "APK",
+          "appIconColor": "#FF7139",
+          "signatures": null,
+          "targets": [
+            {
+              "version": "158.0.2",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": "Download org.mozilla.firefox v158.0.2 (APK) arm64-v8a nodpi versionCode 2016191575 from APKMirror"
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "skipFirstRun",
+          "title": "Skip First-Run Onboarding",
+          "description": "Marks onboarding as completed so Firefox launches directly into the home screen/browser without displaying the welcome carousel, default browser prompt, or privacy tour.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "suppressContinuousPromos",
+          "title": "Suppress Continuous Onboarding & Promos",
+          "description": "Neutralizes ContinuousOnboardingFeature startup and dialog triggers to prevent background default browser nags, wallpaper prompts, and feature callouts.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        }
+      ]
     },
     {
       "name": "Unlock 365 Family",
