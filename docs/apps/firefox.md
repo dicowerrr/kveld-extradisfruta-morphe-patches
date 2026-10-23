@@ -25,6 +25,8 @@ Technical documentation and patch catalog for Firefox on Android.
 | **Firefox Telemetry Manifest Purge** | `resourcePatch` | `false` (Opt-in) | None | Strips advertising/tracking permissions (`AD_ID`, AdServices, InstallReferrer), disables Adjust and crash reporting services/receivers, and injects opt-out metadata flags in AndroidManifest.xml. |
 | **Bypass Compatibility Checks** | `bytecodePatch` | `false` (Opt-in) | `Firefox Compatibility Manifest Normalization` | Neutralizes client-side environment checks (`isRooted`, `isEmulator`, `isDebuggerAttached` forced to false) in environment utility classes while preserving network, deep links, and GeckoView assets. |
 | **Firefox Compatibility Manifest Normalization** | `resourcePatch` | `false` (Opt-in) | None | Strips `sharedUserId` and `sharedUserLabel` from the root manifest element when present to eliminate installation conflicts. |
+| **Privacy Controls** | `bytecodePatch` | `false` (Opt-in) | `Privacy Controls Setup` | Provides opt-in privacy toggles: screenshot enablement in private tabs (`allowScreenshots`), network security hardening (`hardenNetworkSecurity`), URL tracking parameter stripping (`cleanShareUrls`), and runtime device identifier neutralization (`neutralizeDeviceData`). |
+| **Privacy Controls Setup** | `resourcePatch` | `false` (Opt-in) | None | Provides optional manifest-level permission stripping across 7 granular privacy axes (camera, microphone, location, notifications, media-storage, package-query, biometrics) and injects network security configuration for user CA trust. |
 
 ---
 
@@ -41,6 +43,12 @@ Technical documentation and patch catalog for Firefox on Android.
 
 4. **Opt-in Compatibility Gate**:
    Environment neutralization and manifest normalization hooks remain disabled by default (`false`) until specifically required and verified on target devices with modified runtimes, emulators, or conflicting shared UID installations.
+
+5. **Granular Permission Stripping Hazards**:
+   The permission stripping options in Privacy Controls completely remove respective `<uses-permission>` tags from AndroidManifest.xml. Enabling `stripCamera` or `stripMicrophone` disables WebRTC video/audio conferencing and QR code scanning; enabling `stripLocation` disables web geolocation APIs; enabling `stripNotifications` suppresses download status, media playback controls, and background tab notifications.
+
+6. **Network Security Hardening Scope**:
+   The `hardenNetworkSecurity` option enables trust for user-added CA certificates and neutralizes certificate pinning checks. This should only be activated for legitimate local traffic inspection, debugging, or custom proxy setups, as trusting user CAs reduces defense-in-depth against untrusted local networks.
 
 ---
 
@@ -81,3 +89,28 @@ Technical documentation and patch catalog for Firefox on Android.
   - Retains standard `INTERNET` access, system hardware feature declarations, and Android deep link `VIEW` intent filters.
   - Preserves GeckoView initialization routines, native shared library bindings, and `omni.ja` archive extraction paths.
   - Remains disabled by default until verified against specific device deployment requirements.
+
+### 3. Privacy Controls Layer
+
+- **Typology**: `bytecodePatch` (`Privacy Controls`, default `false`) + `resourcePatch` (`Privacy Controls Setup`, default `false`).
+- **Screenshot Protection Bypass (`allowScreenshots`)**:
+  - Overrides window flag management to prevent setting `WindowManager.LayoutParams.FLAG_SECURE` in private browsing tabs and secure UI surfaces, enabling user screenshots and display mirroring.
+- **Network Security Hardening (`hardenNetworkSecurity`)**:
+  - Overrides OkHttp and GeckoView certificate pinning verifiers to accept configured trust stores.
+  - Injects an updated XML Network Security Configuration trusting user-installed CA certificates (`<certificates src="user" />`).
+- **URL Parameter Stripping (`cleanShareUrls`)**:
+  - Intercepts link sharing actions and outgoing URL dispatchers.
+  - Sanitizes web addresses by pruning common marketing and tracking parameters, including `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, `fbclid`, `gclid`, and `igshid`.
+- **Device Identifier Neutralization (`neutralizeDeviceData`)**:
+  - Forces advertising identifier queries (`AdvertisingIdClient`) to return null or zeroed strings (`00000000-0000-0000-0000-000000000000`).
+  - Stubs sensor listener and battery status telemetry queries to prevent passive device fingerprinting.
+- **Granular Permission Stripping (7 Axes)**:
+  - `stripCamera`: Removes `android.permission.CAMERA`.
+  - `stripMicrophone`: Removes `android.permission.RECORD_AUDIO`.
+  - `stripLocation`: Removes `android.permission.ACCESS_FINE_LOCATION` and `android.permission.ACCESS_COARSE_LOCATION`.
+  - `stripNotifications`: Removes `android.permission.POST_NOTIFICATIONS`.
+  - `stripMediaStorage`: Removes external storage and media permissions (`READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO`, `READ_EXTERNAL_STORAGE`).
+  - `stripPackageQuery`: Removes `QUERY_ALL_PACKAGES` and broad `<queries>` package visibility elements.
+  - `stripBiometrics`: Removes `USE_BIOMETRIC` and `USE_FINGERPRINT`.
+- **Vetoed Architectural Scope**:
+  - Offline Mode is explicitly **VETOED** and excluded; as a web browser, Firefox requires continuous network communication to perform core navigation. Offline toggles are architecturally inapplicable.
